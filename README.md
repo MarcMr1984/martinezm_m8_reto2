@@ -120,7 +120,7 @@ Puedes reutilizarlo libremente con fines educativos, científicos o analíticos.
 
 ## 🙋 Autoría
 
-Proyecto desarrollado por **Marc Martínez** como parte del módulo M8 del Máster en Ciencia de Datos.  
+Proyecto desarrollado por **Marc Martínez** como parte del módulo 8 del Máster Behavioral Data Science.  
 Profesores tutores: [Nombre], [Nombre]
 
 ¿Feedback o sugerencias? ¡Bienvenidas!
