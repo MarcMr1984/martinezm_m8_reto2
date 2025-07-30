@@ -59,6 +59,7 @@ Esta transformación se aplica mediante el script `code/rename_vars.R`.
 
 ## 📂 Estructura del repositorio
 
+```
 martinezm_m8_reto2/
 ├── data/
 │   ├── ACSST5Y2023.S1701-Data.csv             # Datos originales del ACS
@@ -76,6 +77,7 @@ martinezm_m8_reto2/
 ├── presentation/
 │   └── presentation.Rmd          # Presentación final del reto
 └── README.md                     # Documento explicativo del proyecto
+```
 
 
 ---
