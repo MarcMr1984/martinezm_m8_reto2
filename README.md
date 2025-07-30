@@ -59,7 +59,6 @@ Esta transformación se aplica mediante el script `code/rename_vars.R`.
 
 ## 📂 Estructura del repositorio
 
-```
 martinezm_m8_reto2/
 ├── data/
 │   ├── ACSST5Y2023.S1701-Data.csv             # Datos originales del ACS
@@ -77,7 +76,7 @@ martinezm_m8_reto2/
 ├── presentation/
 │   └── presentation.Rmd          # Presentación final del reto
 └── README.md                     # Documento explicativo del proyecto
-```
+
 
 ---
 
@@ -90,17 +89,18 @@ Todo el análisis está documentado con scripts en R:
 
 ---
 
+## 📜 Licencia
+
+Distribuido bajo la **MIT License**.  
+Puedes reutilizarlo libremente con fines educativos, científicos o analíticos.
+
+---
+
 ## 🔗 Enlaces útiles
 
 - [Documentación oficial ACS S1701](https://data.census.gov/table/ACSST5Y2023.S1701)  
 - [Guía RMarkdown](https://rmarkdown.rstudio.com/)  
 - [Licencia MIT](https://opensource.org/licenses/MIT)
-
----
-
-## 📜 Licencia
-
-Este proyecto se distribuye bajo licencia MIT. Puedes usar, modificar y compartir libremente citando la fuente.
 
 ---
 
