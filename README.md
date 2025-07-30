@@ -14,8 +14,6 @@ Este proyecto busca identificar **patrones socioeconómicos de pobreza** a trav�
 
 ---
 
----
-
 ## 🎯 Objetivos del Proyecto
 
 ### Objetivo principal  
