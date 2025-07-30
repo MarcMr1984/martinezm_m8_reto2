@@ -56,7 +56,7 @@ Esta transformación se aplica mediante el script `code/rename_vars.R`.
 
 ---
 
-## 🎯 Visualizaciones clave
+## 📊 Visualizaciones clave
 
 | # | Tema                             | Técnica usada            | Insight obtenido                         |
 |---|----------------------------------|---------------------------|------------------------------------------|
@@ -71,10 +71,10 @@ Los gráficos están integrados en el dashboard interactivo desarrollado con RMa
 
 ## 🎛️ Funcionalidades interactivas
 
-- Filtros dinámicos: género, educación, raza.
-- Tooltips con estimaciones + márgenes de error (`_E` y `_M`).
-- Coordinación entre paneles por grupo poblacional.
-- Selector geográfico por estado (`NAME`).
+- Filtros dinámicos: género, educación, raza.  
+- Tooltips con estimaciones + márgenes de error (`_E` y `_M`).  
+- Coordinación entre paneles por grupo poblacional.  
+- Selector geográfico por estado (`NAME`).  
 
 Diseño guiado por principios de percepción visual (Gestalt, Ware 2013) y codificación efectiva (Ribera 2023).
 
@@ -92,6 +92,7 @@ Diseño guiado por principios de percepción visual (Gestalt, Ware 2013) y codif
 ---
 
 ## 📂 Estructura del repositorio
+
 
 ```
 martinezm_m8_reto2/
@@ -113,7 +114,6 @@ martinezm_m8_reto2/
 └── README.md                     # Documento explicativo del proyecto
 ```
 
-
 ---
 
 ## 📜 Licencia
@@ -125,8 +125,8 @@ Puedes reutilizarlo libremente con fines educativos, científicos o analíticos.
 
 ## 🔗 Enlaces útiles
 
-- [Documentación oficial ACS S1701](https://data.census.gov/table/ACSST5Y2023.S1701)
-- [Guía RMarkdown](https://rmarkdown.rstudio.com/)
+- [Documentación oficial ACS S1701](https://data.census.gov/table/ACSST5Y2023.S1701)  
+- [Guía RMarkdown](https://rmarkdown.rstudio.com/)  
 - [Licencia MIT](https://opensource.org/licenses/MIT)
 
 ---
@@ -137,5 +137,4 @@ Proyecto desarrollado por **Marc Martínez** como parte del módulo 8 del *Mást
 Profesores tutores: **Dr. David Leiva Ureña**, **Dra. Mireia Ribera Turró**
 
 ¿Feedback o sugerencias? ¡Bienvenidas!
-
 
