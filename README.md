@@ -38,8 +38,7 @@ Fuentes oficiales del **U.S. Census Bureau**, extraídas del programa **ACS 5-Ye
 | `ACSST5Y2023.S1701-Data.csv`           | Datos estimados y márgenes de error por grupo poblacional   |
 | `ACSST5Y2023.S1701-Column-Metadata.csv`| Diccionario técnico de las columnas (`_E`, `_M`, `_C`)       |
 | `ACSST5Y2023.S1701-Table-Notes.txt`    | Notas metodológicas y definiciones del ACS                  |
-
-Se ha generado un fichero limpio (`acs_clean.csv`) con variables renombradas para facilitar el análisis técnico y visual.
+| `acs_clean.csv`                        | Datos limpios para análisis técnico y visual                |
 
 ---
 
@@ -58,43 +57,7 @@ Esta transformación se aplica mediante el script `code/rename_vars.R`.
 
 ---
 
-## 📊 Visualizaciones clave
-
-| # | Tema                             | Técnica usada            | Insight obtenido                         |
-|---|----------------------------------|---------------------------|------------------------------------------|
-| 1️⃣ | Pobreza infantil por estado     | `geom_col()` horizontal  | PR y MS destacan con tasas elevadas      |
-| 2️⃣ | Nivel educativo vs pobreza      | `pivot_longer()` + `boxplot` | Relación inversa clara                |
-| 3️⃣ | Género y raza (con error bars) | `geom_errorbar()`        | Mujeres y minorías con mayor vulnerabilidad |
-| 4️⃣ | Empleo ↔ pobreza                | `scatter` + `lm()`       | Correlación negativa notable              |
-
-Los gráficos están integrados en el dashboard interactivo desarrollado con RMarkdown.
-
----
-
-## 🎛️ Funcionalidades interactivas
-
-- Filtros dinámicos: género, educación, raza.  
-- Tooltips con estimaciones + márgenes de error (`_E` y `_M`).  
-- Coordinación entre paneles por grupo poblacional.  
-- Selector geográfico por estado (`NAME`).  
-
-Diseño guiado por principios de percepción visual (Gestalt, Ware 2013) y codificación efectiva (Ribera 2023).
-
----
-
-## 🧪 Tipología técnica de variables
-
-| Tipo de dato         | Ejemplos                  | Uso visual                     |
-|----------------------|---------------------------|--------------------------------|
-| Categórico nominal   | `SEX`, `RACE`, `NAME`     | Colores, facetas por grupo     |
-| Categórico ordinal   | Educación, edad           | Orden lógico, gradientes       |
-| Numérico discreto    | Tamaño poblacional (`_C`) | Escala proporcional            |
-| Numérico continuo    | % pobreza (`_E`)          | Ejes, tamaños, color cuantitativo |
-
----
-
 ## 📂 Estructura del repositorio
-
 
 ```
 martinezm_m8_reto2/
@@ -118,10 +81,12 @@ martinezm_m8_reto2/
 
 ---
 
-## 📜 Licencia
+## 💻 Reproducibilidad
 
-Distribuido bajo la **MIT License**.  
-Puedes reutilizarlo libremente con fines educativos, científicos o analíticos.
+Todo el análisis está documentado con scripts en R:
+- Estructura modular por funciones y fases.
+- Dashboard interactivo creado con `flexdashboard` y `plotly`.
+- Control de versiones mediante Git.
 
 ---
 
@@ -133,10 +98,15 @@ Puedes reutilizarlo libremente con fines educativos, científicos o analíticos.
 
 ---
 
+## 📜 Licencia
+
+Este proyecto se distribuye bajo licencia MIT. Puedes usar, modificar y compartir libremente citando la fuente.
+
+---
+
 ## 🙋 Autoría
 
 Proyecto desarrollado por **Marc Martínez** como parte del módulo 8 del *Máster en Behavioral Data Science* – Universidad de Barcelona.  
 Profesores tutores: **Dr. David Leiva Ureña**, **Dra. Mireia Ribera Turró**
 
 ¿Feedback o sugerencias? ¡Bienvenidas!
-
