@@ -14,6 +14,23 @@ Este proyecto busca identificar **patrones socioeconómicos de pobreza** a trav�
 
 ---
 
+---
+
+## 🎯 Objetivos del Proyecto
+
+### Objetivo principal  
+Desarrollar un análisis de Ciencia de Datos orientado a comprender y modelar el comportamiento de la pobreza estructural en EE.UU. mediante datos socioeconómicos del ACS S1701, generando insights accionables y visualizaciones reproducibles que apoyen decisiones informadas.
+
+### Objetivos específicos  
+- 📊 Explorar y limpiar el conjunto de datos para garantizar su calidad y adecuación al análisis.  
+- 🔍 Identificar patrones relevantes de pobreza por variables como edad, género, raza, educación y empleo.  
+- 🧠 Aplicar modelos de segmentación y regresión para explicar relaciones entre factores demográficos y pobreza.  
+- 📈 Evaluar el rendimiento de los modelos con métricas cuantitativas y criterios de utilidad interpretativa.  
+- 📑 Documentar el proceso completo siguiendo prácticas de reproducibilidad (scripts + dashboard interactivo).  
+- 🧠 Interpretar los resultados y proponer recomendaciones basadas en datos para políticas públicas o investigación.
+
+---
+
 ## 📁 Datos utilizados
 
 Fuentes oficiales del **U.S. Census Bureau**, extraídas del programa **ACS 5-Year Estimates (2019–2023)**, tabla **S1701: Poverty Status in the Past 12 Months**.
