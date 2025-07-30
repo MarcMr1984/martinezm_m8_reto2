@@ -12,8 +12,6 @@ Este proyecto busca identificar **patrones socioeconómicos de pobreza** a trav�
 - Visualizaciones interactivas comparativas entre estados.
 - Reproducibilidad completa con scripts documentados en R.
 
----
-
 ## 🎯 Objetivos del Proyecto
 
 ### Objetivo principal  
