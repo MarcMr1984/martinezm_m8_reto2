@@ -120,8 +120,9 @@ Puedes reutilizarlo libremente con fines educativos, científicos o analíticos.
 
 ## 🙋 Autoría
 
-Proyecto desarrollado por **Marc Martínez** como parte del módulo 8 del Máster Behavioral Data Science.  
-Profesores tutores: [Nombre], [Nombre]
+Proyecto desarrollado por **Marc Martínez** como parte del módulo 8 del *Máster en Behavioral Data Science* – Universidad de Barcelona.  
+Profesores tutores: **Dr. David Leiva Ureña**, **Dra. Mireia Ribera Turró**
 
 ¿Feedback o sugerencias? ¡Bienvenidas!
+
 
