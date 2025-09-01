@@ -8,11 +8,13 @@ Análisis técnico, visual e interactivo de la evolución de la pobreza en EE.UU
 
 ### 📌 Descripción general
 
+<div style="text-align: justify"> 
 Este proyecto presenta un estudio detallado de la pobreza en Estados Unidos, basado en datos del American Community Survey (ACS), tabla S1701.  
 
 Se analizan **patrones persistentes**, **brechas estructurales** y **dinámicas territoriales** que afectan la distribución de la pobreza, con énfasis en variables como edad, género, etnia, educación y empleo.
 
 A través de indicadores clave (KPIs), estimaciones robustas y visualizaciones interactivas, se ofrece una herramienta útil para investigadores, responsables de políticas públicas y cualquier persona interesada en comprender las desigualdades socioeconómicas en el país.
+</div>
 
 ---
 
@@ -118,6 +120,7 @@ Diseñado con `flexdashboard`, `ggplot2`, `plotly` y `dplyr`.
 
 ### 📄 Informe técnico reproducible
 
+<div style="text-align: justify"> 
 Generado con `knitr` y `RMarkdown`, este informe presenta un análisis detallado y reproducible sobre la evolución de la pobreza en EE.UU. entre 2016 y 2023, con foco en subgrupos sociales y estados. Incluye:
 
 - 📋 **Tabla resumen** por estado y grupo social, con indicadores clave como población total, bajo umbral de pobreza y porcentaje de pobreza.
@@ -126,6 +129,7 @@ Generado con `knitr` y `RMarkdown`, este informe presenta un análisis detallado
 - 📊 **Visualizaciones exploratorias** como histogramas, boxplots, gráficos de dispersión y circulares, que permiten detectar patrones, outliers y relaciones estructurales.
 - 🧮 **Indicadores clave (KPIs)** sobre pobreza actual, variación anual y evolución en cinco años, útiles para el monitoreo y evaluación de políticas públicas.
 - 🎨 **Codificación visual personalizada** mediante un vector de colores temático, que mejora la legibilidad y coherencia del dashboard interactivo.
+</div>
 
 ---
 
