@@ -1,0 +1,358 @@
+---
+title: "Dashboard de Pobreza en EE.UU."
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    iconLib: font-awesome
+    theme: cosmo
+runtime: shiny
+---
+
+
+```{r setup, include=FALSE}
+suppressPackageStartupMessages({
+  library(flexdashboard)
+  library(shiny)
+  library(dplyr)
+  library(ggplot2)
+  library(readr)
+  library(lubridate)
+  library(scales)
+})
+
+# Carga de datos (ruta solicitada)
+df <- read_csv("../data/df_pobreza_con_estimacion.csv", show_col_types = FALSE)
+
+# Normalización ligera
+df <- df %>%
+  mutate(
+    Fecha = as.Date(Fecha),
+    Estado = as.character(Estado),
+    Tematica = as.character(Tematica),
+    Grupo_social = as.character(Grupo_social)
+  )
+
+# Colores personalizados (exactos)
+colores_dashboard <- c(
+  "Edad" = "#4E79A7", "Población en edad laboral" = "#A0CBE8", "Personas mayores" = "#86BCB6", "Menores de edad" = "#499894",
+  "Sexo" = "#D37295", "Masculino" = "#B07AA1", "Femenino" = "#D4A6C8",
+  "Etnia" = "#79706E", "Negro o afroamericano" = "#BAB0AC", "Hispano o latino" = "#9D7660", "Blanco" = "#D7B5A6",
+  "Educación" = "#59A14F", "Educación básica" = "#8CD17D", "Educación secundaria" = "#B6992D", "Título universitario" = "#F1CE63",
+  "Empleo" = "#E15759", "Empleado" = "#F28E2B", "Desempleado" = "#EDC948"
+)
+
+# Paleta segura en función de niveles presentes
+get_palette <- function(keys) {
+  keys <- as.character(keys)
+  has <- names(colores_dashboard) %in% keys
+  pal <- colores_dashboard[has]
+  # Reordenar según keys y, si falta alguno, generar de respaldo
+  out <- pal[names(pal) %in% keys]
+  if (length(out) < length(keys)) {
+    miss <- setdiff(keys, names(out))
+    out <- c(out, setNames(scales::hue_pal()(length(miss)), miss))
+  }
+  out[keys]
+}
+
+fmt_pct <- function(x) percent(x, accuracy = 0.1)
+
+# Serie base para KPIs (evita doble conteo entre temáticas)
+kpi_series <- function(data, estado) {
+  prefer <- c("Edad","Sexo","Etnia","Empleo","Educación")
+  d <- data %>% filter(Estado == estado)
+
+  if (any(d$Grupo_social == "Población evaluable para pobreza")) {
+    out <- d %>%
+      filter(Grupo_social == "Población evaluable para pobreza") %>%
+      group_by(Fecha) %>%
+      summarise(Total = sum(Total_poblacion, na.rm = TRUE),
+                Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+                .groups = "drop")
+  } else {
+    base_tem <- intersect(prefer, unique(d$Tematica))[1]
+    out <- d %>%
+      filter(Tematica == base_tem) %>%
+      group_by(Fecha) %>%
+      summarise(Total = sum(Total_poblacion, na.rm = TRUE),
+                Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+                .groups = "drop")
+  }
+
+  out %>% arrange(Fecha) %>% mutate(Pct = Pobre / Total)
+}
+```
+
+Row {.no-padding} 
+-----------------------------------------------------------------------
+
+```{r}
+column(width = 4) 
+selectInput("estado", "Estado", choices = sort(unique(df$Estado))) 
+selectInput("tematica", "Temática", 
+            choices = c("Edad", "Sexo", "Etnia", "Educación"), 
+            selected = "Edad")
+```
+
+Row {.value-boxes}
+-----------------------------------------------------------------------
+
+### 📌 Pobreza actual {.value-box}
+```{r}
+
+renderValueBox({
+  d <- kpi_series(df, input$estado)
+  req(nrow(d) >= 1)
+  valueBox(
+    value = fmt_pct(tail(d$Pct, 1)),
+    caption = "% pobreza actual",
+    icon = "fa-chart-line",
+    color = "primary"
+  )
+})
+```
+
+### 📈 Variación anual {.value-box}
+```{r}
+renderValueBox({
+  d <- kpi_series(df, input$estado)
+  req(nrow(d) >= 2)
+  diff <- (d$Pct[nrow(d)] - d$Pct[nrow(d)-1]) / d$Pct[nrow(d)-1]
+  color <- if (diff < 0) "success" else "warning"
+  valueBox(
+    value = fmt_pct(diff),
+    caption = "Variación anual",
+    icon = ifelse(diff < 0, "fa-arrow-down", "fa-arrow-up"),
+    color = color
+  )
+})
+```
+
+### 📊 Variación 5 años {.value-box}
+```{r}
+renderValueBox({
+  d <- kpi_series(df, input$estado)
+  req(nrow(d) >= 6)
+  ref <- nrow(d) - 5
+  diff <- (d$Pct[nrow(d)] - d$Pct[ref]) / d$Pct[ref]
+  color <- if (diff < 0) "success" else "warning"
+  valueBox(
+    value = fmt_pct(diff),
+    caption = "Variación 5 años",
+    icon = ifelse(diff < 0, "fa-arrow-down", "fa-arrow-up"),
+    color = color
+  )
+})
+```
+
+Row {.no-padding}
+-----------------------------------------------------------------------
+
+```{r}
+
+fluidRow(
+  column(width = 12,
+    div(style = "margin-bottom: 30px; padding-left: 30px; padding-right: 30px;",
+      renderPlot({
+        datos <- df %>%
+          filter(Estado == input$estado, Tematica == input$tematica) %>%
+          group_by(Fecha, Grupo_social) %>%
+          summarise(Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+                    Total = sum(Total_poblacion, na.rm = TRUE),
+                    .groups = "drop") %>%
+          mutate(Pct = Pobre / Total)
+
+        validate(need(nrow(datos) > 0, "Sin datos para la combinación seleccionada."))
+        pal <- get_palette(unique(datos$Grupo_social))
+
+        extremos <- datos %>%
+          group_by(Grupo_social) %>%
+          summarise(
+            Fecha_ini = first(Fecha),
+            Pct_ini = first(Pct),
+            Fecha_fin = last(Fecha),
+            Pct_fin = last(Pct),
+            .groups = "drop"
+          )
+
+        ggplot(datos, aes(x = Fecha, y = Pct, color = Grupo_social)) +
+          geom_line(linewidth = 1.2) +
+          geom_text(data = extremos,
+                    aes(x = Fecha_ini, y = Pct_ini, label = fmt_pct(Pct_ini)),
+                    color = "black", hjust = -0.1, vjust = 1.2, size = 3, inherit.aes = FALSE) +
+          geom_text(data = extremos,
+                    aes(x = Fecha_fin, y = Pct_fin, label = fmt_pct(Pct_fin)),
+                    color = "black", hjust = 1.1, vjust = -0.6, size = 3, inherit.aes = FALSE) +
+          scale_color_manual(values = pal) +
+          scale_y_continuous(labels = scales::percent_format()) +
+          labs(
+            title = paste("Evolución de pobreza por grupo –", input$estado),
+            subtitle = "Tasa de pobreza (% dentro de cada grupo) a lo largo del tiempo\nIncluye valores iniciales y finales por grupo",
+            x = NULL, y = "% pobreza", color = "Grupo"
+          ) +
+          theme_minimal(base_size = 12) +
+          theme(legend.position = "bottom")
+      }, res = 96, height = 400)
+    )
+  )
+)
+
+```
+
+```{r}
+fluidRow(
+  column(width = 12,
+    div(style = "margin-bottom: 30px; padding-left: 30px; padding-right: 30px;",
+      renderPlot({
+        ultimo <- df %>%
+          filter(Estado == input$estado, Tematica == input$tematica) %>%
+          summarise(Fecha = max(Fecha, na.rm = TRUE)) %>%
+          pull(Fecha)
+
+        validate(need(length(ultimo) == 1 && is.finite(ultimo), "No hay fecha válida para esta combinación."))
+
+        datos <- df %>%
+          filter(Estado == input$estado,
+                 Tematica == input$tematica,
+                 Fecha == ultimo) %>%
+          group_by(Grupo_social) %>%
+          summarise(
+            Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+            Total = sum(Total_poblacion, na.rm = TRUE),
+            .groups = "drop"
+          ) %>%
+          mutate(Pobre = if_else(is.na(Pobre), 0, Pobre)) %>%
+          filter(Pobre > 0)
+
+        validate(need(nrow(datos) > 0, paste0("Sin datos de pobreza para ", format(ultimo, "%Y-%m-%d"), ".")))
+
+        suma_pobre <- sum(datos$Pobre, na.rm = TRUE)
+        validate(need(suma_pobre > 0, "No hay personas bajo pobreza en la fecha seleccionada."))
+
+        datos <- datos %>%
+          mutate(
+            Pct = Pobre / suma_pobre,
+            etiqueta = paste0(fmt_pct(Pct), "\n(n=", scales::comma(Pobre), ")")
+          ) %>%
+          arrange(desc(Pct))
+
+        pal <- get_palette(unique(datos$Grupo_social))
+
+        ggplot(datos, aes(x = 2, y = Pct, fill = Grupo_social)) +
+          geom_col(width = 1, color = "white") +
+          coord_polar(theta = "y") +
+          xlim(0.5, 2.5) +
+          geom_text(aes(label = etiqueta),
+                    position = position_stack(vjust = 0.5),
+                    size = 3, lineheight = 0.9) +
+          scale_fill_manual(values = pal) +
+          labs(
+            title = paste("Distribución de personas bajo pobreza –", lubridate::year(ultimo)),
+            subtitle = "Participación por grupo dentro del total de personas pobres (volumen abs.)",
+            x = NULL, y = NULL, fill = "Grupo",
+            caption = "Nota: este gráfico muestra la composición total; la línea anterior refleja tasas de pobreza dentro de cada grupo."
+          ) +
+          theme_void() +
+          theme(
+            legend.position = "bottom",
+            plot.subtitle = element_text(size = 10, face = "italic"),
+            plot.caption = element_text(size = 8, color = "grey40")
+          )
+      }, res = 96, height = 400)
+    )
+  )
+)
+```
+
+
+Row {.no-padding}
+-----------------------------------------------------------------------
+
+
+```{r}
+fluidRow(
+  column(width = 12,
+    div(style = "margin-bottom: 30px; padding-left: 30px; padding-right: 30px;",
+      renderPlot({
+        ultimo <- df %>%
+          filter(Estado == input$estado) %>%
+          summarise(Fecha = max(Fecha, na.rm = TRUE)) %>%
+          pull(Fecha)
+
+        tematicas_deseadas <- c("Etnia", "Edad", "Sexo", "Educación")
+
+        datos <- df %>%
+          filter(Estado == input$estado, Fecha == ultimo, Tematica %in% tematicas_deseadas) %>%
+          group_by(Tematica) %>%
+          summarise(Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE), .groups = "drop") %>%
+          mutate(Pct = Pobre / sum(Pobre),
+                 etiqueta = paste0(fmt_pct(Pct), "\n(n=", scales::comma(Pobre), ")")) %>%
+          arrange(desc(Pct))
+
+        validate(need(nrow(datos) > 0, "Sin datos de pobreza para las temáticas seleccionadas."))
+        pal <- get_palette(datos$Tematica)
+
+        ggplot(datos, aes(x = reorder(Tematica, -Pct), y = Pct, fill = Tematica)) +
+          geom_col() +
+          geom_text(aes(label = etiqueta), vjust = -0.4, size = 3, color = "black", lineheight = 0.9) +
+          scale_fill_manual(values = pal) +
+          scale_y_continuous(labels = scales::percent_format(), expand = expansion(mult = c(0, 0.1))) +
+          labs(
+            title = paste("Aportación al total de pobreza –", lubridate::year(ultimo)),
+            subtitle = "Distribución de personas pobres por temática (suma = 100%)",
+            x = "Temática", y = "% del total de personas bajo pobreza"
+          ) +
+          theme_minimal(base_size = 12) +
+          theme(legend.position = "none")
+      }, res = 96, height = 400)
+    )
+  )
+)
+```
+
+```{r}
+fluidRow(
+  column(width = 12,
+    div(style = "margin-bottom: 30px; padding-left: 30px; padding-right: 30px;",
+      renderPlot({
+        ultimo <- df %>%
+          filter(Estado == input$estado) %>%
+          summarise(Fecha = max(Fecha, na.rm = TRUE)) %>%
+          pull(Fecha)
+
+        datos <- df %>%
+          filter(Estado == input$estado, Tematica == "Empleo", Fecha == ultimo) %>%
+          group_by(Grupo_social) %>%
+          summarise(Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+                    .groups = "drop") %>%
+          mutate(Pct = Pobre / sum(Pobre)) %>%
+          arrange(desc(Pct))
+
+        validate(need(nrow(datos) > 0, "Sin datos de 'Empleo' para la fecha actual."))
+
+        pal <- get_palette(datos$Grupo_social)
+
+        ggplot(datos, aes(x = reorder(Grupo_social, -Pct), y = Pct, fill = Grupo_social)) +
+          geom_col() +
+          geom_text(aes(label = paste0(fmt_pct(Pct), "\nN = ", scales::comma(Pobre))),
+                    vjust = -0.6, size = 3.3) +
+          scale_fill_manual(values = pal) +
+          scale_y_continuous(labels = scales::percent_format(), expand = expansion(mult = c(0, 0.1))) +
+          labs(
+            title = "Distribución dentro de la población pobre",
+            subtitle = "Por situación laboral",
+            x = "Grupo laboral",
+            y = "% dentro del total en pobreza"
+          ) +
+          theme_minimal(base_size = 12) +
+          theme(legend.position = "none")
+      }, res = 96, height = 400)
+    )
+  )
+)
+```
+
+
+
+

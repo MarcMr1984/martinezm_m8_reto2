@@ -1,0 +1,642 @@
+---
+title: "**Resumen de Hallazgos: Pobreza en EE.UU. (ACS 2016–2023)**"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE }
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(dplyr)
+library(ggplot2)
+library(kableExtra)
+library(readr)
+library(lubridate) 
+library (scales)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+df <- read_csv("../data/df_pobreza_con_estimacion.csv")
+
+```
+<br><br>
+
+#### 🧭 **Introducción y contexto metodológico**
+
+<div style="text-align: justify">
+Este informe presenta un resumen de hallazgos sobre la evolución y distribución de la pobreza en Estados Unidos entre los años **2016 y 2023**, utilizando datos de la **American Community Survey (ACS)**. El objetivo principal es identificar patrones estructurales y dinámicas sociales que afectan a distintos grupos poblacionales, con el fin de orientar el diseño de políticas públicas más eficaces.
+
+Se han analizado múltiples dimensiones sociales —como **edad, sexo, etnia, nivel educativo y situación laboral**— para comprender cómo varía la pobreza entre grupos y regiones. Además, se ha incorporado una perspectiva temporal que permite observar tendencias, rupturas y posibles efectos coyunturales.
+
+Una consideración metodológica importante es el tratamiento del año **2020**, marcado por la pandemia de COVID-19. Dado que algunos datos presentan inconsistencias o fueron estimados, se ha diferenciado visualmente este año en los gráficos mediante codificación específica. Esta distinción permite interpretar los resultados con mayor cautela y detectar posibles sesgos derivados del contexto excepcional.
+</div>
+
+<br><br>
+
+#### 📊 **Indicadores generales de pobreza (2023)**
+
+```{r}
+tabla_resumen <- df %>%
+  filter(format(Fecha, "%Y") == "2023") %>%
+  group_by(Grupo_social) %>%
+  summarise(
+    Poblacion_total = sum(Total_poblacion, na.rm = TRUE),
+    Bajo_pobreza = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+    Porcentaje_pobreza = round(100 * Bajo_pobreza / Poblacion_total, 2)
+  ) %>%
+  arrange(desc(Porcentaje_pobreza))
+
+tabla_resumen %>%
+  kable("html", caption = "Indicadores de pobreza por grupo social (2023)") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+
+```
+<div style="text-align: justify">
+La tabla anterior presenta los principales indicadores de pobreza para el año **2023**, desagregados por grupo social. Este primer acercamiento permite identificar los colectivos más afectados y establecer prioridades analíticas.
+
+**Observaciones clave:**
+
+Los grupos con **menor nivel educativo** —como aquellos con educación básica o sin secundaria— presentan los **porcentajes más altos de pobreza**, lo que refuerza la hipótesis de que la educación es un factor estructural en la reproducción de la desigualdad.
+
+La **situación laboral** también emerge como un determinante crítico: los **desempleados** y trabajadores en condiciones precarias concentran niveles elevados de pobreza.
+
+En cuanto a la **edad**, los **menores de edad** muestran una vulnerabilidad persistente, con tasas superiores al promedio nacional, mientras que las **personas mayores** presentan niveles más bajos pero no exentos de riesgo.
+
+Este diagnóstico inicial orienta el resto del informe hacia un análisis temático más profundo, con especial énfasis en la **educación** como eje explicativo central.
+</div>
+
+<br><br>
+
+#### 🔍 **Visualización exploratoria y detección de patrones**
+
+<div style="text-align: justify">
+Antes de profundizar en el análisis temático, se ha realizado una exploración visual de los datos para identificar **patrones relevantes** en la distribución del porcentaje de pobreza. Esta fase permite detectar **sesgos**, **asimetrías**, **variabilidad regional** y **valores extremos**, que orientan el análisis posterior y ayudan a contextualizar los indicadores.
+</div>
+
+**Histogramas por año**
+
+```{r}
+
+df_final <- df %>%
+  select(Fecha, Estado, Grupo_social, Porcentaje_pobreza) %>%
+  mutate(Estimado = year(Fecha) == 2020)
+
+df_final %>%
+  ggplot(aes(x = Porcentaje_pobreza, fill = Estimado)) +
+  geom_histogram(binwidth = 0.01, color = "white") +
+  facet_wrap(~Fecha) +
+  scale_fill_manual(values = c("FALSE" = "steelblue", "TRUE" = "#08306b")) +  
+  labs(title = "Distribución del Porcentaje de Pobreza por Año (2020 estimado)",
+       x = "% Pobreza", y = "Frecuencia") +
+  scale_x_continuous(labels = scales::percent_format()) +
+  theme(strip.background = element_rect(fill = "gray90", color = "gray40"),
+        strip.text = element_text(face = "bold", color = "black"),
+        legend.position = "none")
+
+```
+<div style="text-align: justify">
+El año **2020**, marcado como estimado, muestra una distribución diferenciada que podría reflejar **sesgos derivados de la pandemia** o ajustes metodológicos. Esta visualización permite detectar **desplazamientos en la forma de la distribución** y posibles **rupturas en la serie histórica**, lo que justifica su tratamiento especial en el análisis.
+</div>
+
+<br><br>
+
+**Boxplots por estado**
+
+```{r}
+df_final %>%
+  ggplot(aes(x = Estado, y = Porcentaje_pobreza)) +
+  geom_boxplot(outlier.colour = "red") +
+  labs(title = "Variabilidad del Porcentaje de Pobreza por Estado", y = "% Pobreza") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_y_continuous(labels = scales::percent_format())
+
+```
+
+<div style="text-align: justify">
+Los boxplots revelan una **alta variabilidad regional**. Algunos estados presentan concentraciones estrechas en torno a la mediana, mientras que otros exhiben una mayor dispersión y presencia de **outliers extremos**. Estas diferencias sugieren **dinámicas locales** que amplifican la desigualdad y que deben ser consideradas en el diseño de políticas territoriales.
+</div>
+
+<br><br>
+
+**Outliers por grupo social y año**
+
+```{r}
+df_outliers <- df_final %>%
+  group_by(Fecha, Grupo_social) %>%
+  filter(Porcentaje_pobreza > quantile(Porcentaje_pobreza, 0.95, na.rm = TRUE))  %>%
+  arrange(desc(Porcentaje_pobreza)) %>%
+  select(Fecha, Estado, Grupo_social, Porcentaje_pobreza)
+```
+
+```{r}
+df_outliers %>%
+  arrange(Fecha) %>% 
+  head(5) %>%         
+  kable("html", caption = "Estados con pobreza extrema (percentil >95%)") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+
+```
+<div style="text-align: justify">
+Este bloque identifica valores anómalos en el porcentaje de pobreza, definidos como aquellos que superan el **percentil 95** dentro de cada grupo social y año. Un ejemplo destacado es **Puerto Rico**, que muestra valores persistentemente elevados en grupos como **Desempleado** y **Educación básica**, con porcentajes superiores al 64% en varios años consecutivos.
+
+La detección de outliers permite **focalizar el análisis en zonas críticas**, priorizar intervenciones y diseñar estrategias más eficaces para grupos sociales específicos.
+</div>
+
+<br><br>
+
+#### 🎓 **Análisis temático centrado en Educación**
+
+<div style="text-align: justify">
+Tras la exploración general, se profundiza en el papel de la **educación** como factor estructural en la distribución de la pobreza. La evidencia empírica sugiere que el nivel educativo es uno de los **determinantes más consistentes** del riesgo de pobreza, tanto a nivel individual como territorial.
+
+Esta sección examina la relación entre **nivel educativo** y **porcentaje de pobreza**, con el objetivo de validar la hipótesis de que la educación actúa como mecanismo protector frente a la exclusión social.
+</div>
+
+**Dispersión: Educación vs Pobreza**
+
+```{r}
+df %>%
+  filter(Tematica == "Educación") %>%
+  mutate(Año = lubridate::year(Fecha),
+         es_2020 = Año == 2020) %>%
+  ggplot(aes(x = Total_poblacion, y = Porcentaje_pobreza)) +
+  geom_point(aes(color = Grupo_social, shape = es_2020), size = 2, alpha = 0.8) +
+  facet_wrap(~Fecha) +
+  labs(
+    title = "Relación Educación ↔ Pobreza por Año (2020 estimado)",
+    x = "Población del grupo educativo",
+    y = "% Pobreza",
+    color = "Grupo educativo",
+    shape = "¿Es 2020?"
+  ) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_shape_manual(values = c("FALSE" = 16, "TRUE" = 17)) +  
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+<div style="text-align: justify">
+El gráfico muestra una clara **gradiente educativa**: a medida que aumenta el nivel de formación, el porcentaje de pobreza disminuye de forma sistemática. Los individuos **sin secundaria** concentran los valores más altos, mientras que aquellos con **educación universitaria** presentan tasas significativamente más bajas.
+
+Este patrón se mantiene de forma consistente a lo largo de los años y en distintos estados, lo que refuerza la idea de que la educación no solo mejora las oportunidades laborales, sino que también **reduce la vulnerabilidad estructural** frente a la pobreza.
+</div>
+
+<br><br>
+
+#### 🧠 **Justificación del enfoque educativo como eje estructural**
+
+<div style="text-align: justify">
+La evidencia presentada justifica el enfoque educativo como **eje central del análisis**. La educación opera como un **factor multiplicador** que incide en múltiples dimensiones: acceso al empleo, estabilidad económica, salud, participación social y resiliencia frente a crisis.
+
+Además, el vínculo entre educación y pobreza no es meramente correlacional, sino que responde a **mecanismos causales** ampliamente documentados en la literatura sociológica y económica. Invertir en educación —especialmente en contextos de alta vulnerabilidad— no solo mejora indicadores individuales, sino que **transforma estructuras sociales** y reduce desigualdades persistentes.
+
+Por ello, el resto del informe se orienta a analizar cómo distintos niveles educativos interactúan con otras variables sociales, y qué políticas podrían **amplificar el efecto protector** de la educación en los territorios más afectados.
+</div>
+
+<br><br>
+
+#### 📌 **KPIs de evolución nacional**
+
+<div style="text-align: justify">
+Para cerrar el análisis cuantitativo, se presentan tres indicadores clave que resumen la evolución de la pobreza a nivel nacional. Estos KPIs permiten una lectura rápida del estado actual y la trayectoria reciente, facilitando la toma de decisiones estratégicas y la evaluación de políticas públicas.
+</div>
+
+```{r}
+datos_kpi_global <- df %>%
+  group_by(Fecha) %>%
+  summarise(
+    Total = sum(Total_poblacion, na.rm = TRUE),
+    Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(Pct = Pobre / Total)
+
+pct_actual <- datos_kpi_global %>% filter(Fecha == max(Fecha)) %>% pull(Pct)
+
+pct_previo <- datos_kpi_global %>% filter(Fecha == max(Fecha) - years(1)) %>% pull(Pct)
+crecimiento_anual <- pct_actual - pct_previo
+
+pct_5anios <- datos_kpi_global %>% filter(Fecha == max(Fecha) - years(5)) %>% pull(Pct)
+crecimiento_5anios <- pct_actual - pct_5anios
+
+kpi_df <- tibble::tibble(
+  Indicador = c("% pobreza actual", "Crecimiento anual", "Crecimiento en 5 años"),
+  Valor = c(scales::percent(pct_actual, accuracy = 0.1),
+            scales::percent(crecimiento_anual, accuracy = 0.1),
+            scales::percent(crecimiento_5anios, accuracy = 0.1))
+)
+
+kpi_df %>%
+  kable("html", caption = "Indicadores clave de evolución nacional de la pobreza") %>%
+  kable_styling(full_width = FALSE, position = "center", bootstrap_options = c("striped", "hover"))
+```
+<div style="text-align: justify">
+**Lectura de los indicadores:**
+
+La **tasa de pobreza actual** se sitúa en 12.0%, lo que representa el nivel más reciente registrado en el país.
+
+En comparación con el año anterior, se observa una **ligera disminución de −0.1 puntos porcentuales**, lo que sugiere una tendencia de mejora moderada.
+
+A lo largo de los últimos **cinco años**, la pobreza ha descendido en **−0.7 puntos porcentuales**, consolidando una trayectoria descendente que, aunque lenta, refleja avances sostenidos.
+
+Estos resultados refuerzan la necesidad de mantener y fortalecer las políticas sociales que han contribuido a esta mejora, especialmente aquellas centradas en educación, empleo y protección social. No obstante, la persistencia de niveles elevados en ciertos grupos y territorios exige una mirada más focalizada y estructural en las siguientes secciones del informe.
+</div>
+
+<br><br>
+
+#### 📚 **Comparativa temática agregada**
+
+<div style="text-align: justify"> 
+Esta sección presenta una comparación transversal entre las principales dimensiones sociales analizadas: **Edad, Etnia, Sexo y Educación**. El objetivo es identificar cuál de estas temáticas presenta mayor capacidad explicativa sobre los niveles de pobreza, y validar la hipótesis de que la **educación** es el factor estructural más relevante.
+
+Para ello, se ha calculado el **porcentaje promedio de pobreza** por grupo social dentro de cada temática, tomando como referencia el año más reciente disponible (**2023**). Esta comparación permite observar la amplitud de las brechas internas y la magnitud de los contrastes entre categorías. 
+</div>
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+colores_dashboard <- c(
+  # Edad
+  "Edad" = "#4E79A7",
+  "Población en edad laboral" = "#A0CBE8",
+  "Personas mayores" = "#86BCB6",
+  "Menores de edad" = "#499894",
+  
+  # Sexo
+  "Sexo" = "#D37295",
+  "Masculino" = "#B07AA1",
+  "Femenino" = "#D4A6C8",
+  
+  # Etnia
+  "Etnia" = "#79706E",
+  "Negro o afroamericano" = "#BAB0AC",
+  "Hispano o latino" = "#9D7660",
+  "Blanco" = "#D7B5A6",
+  
+  # Educación
+  "Educación" = "#59A14F",
+  "Educación básica" = "#8CD17D",
+  "Educación secundaria" = "#B6992D",
+  "Título universitario" = "#F1CE63",
+  
+  # Empleo
+  "Empleo" = "#E15759",
+  "Empleado" = "#F28E2B" ,
+  "Desempleado" = "#EDC948"
+)
+
+```
+
+**Educación vs otras dimensiones (Edad, Etnia, Sexo)**
+
+```{r aportacion-total-pobreza-agregado, echo=TRUE, message=FALSE, warning=FALSE}
+tematicas_deseadas <- c("Etnia", "Edad", "Sexo", "Educación")
+
+ultimo <- df %>%
+  summarise(Fecha = max(Fecha, na.rm = TRUE)) %>%
+  pull(Fecha)
+
+if (length(ultimo) != 1 || !is.finite(ultimo)) {
+  stop("No hay fecha válida para esta combinación.")
+}
+
+datos <- df %>%
+  filter(
+    Fecha == ultimo,
+    Tematica %in% tematicas_deseadas
+  ) %>%
+  group_by(Tematica) %>%
+  summarise(Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE), .groups = "drop") %>%
+  mutate(
+    Pct = Pobre / sum(Pobre),
+    etiqueta = paste0(scales::percent(Pct, accuracy = 0.1), "\n(n=", scales::comma(Pobre), ")")
+  ) %>%
+  arrange(desc(Pct))
+
+paleta <- colores_dashboard[names(colores_dashboard) %in% datos$Tematica]
+
+ggplot(datos, aes(x = reorder(Tematica, -Pct), y = Pct, fill = Tematica)) +
+  geom_col() +
+  geom_text(aes(label = etiqueta), vjust = -0.4, size = 3, color = "black", lineheight = 0.9) +
+  scale_fill_manual(values = paleta) +
+  scale_y_continuous(labels = scales::percent_format(), expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title = paste("Aportación al total de pobreza –", lubridate::year(ultimo)),
+    subtitle = "Distribución de personas pobres por temática (suma = 100%)",
+    x = "Temática", y = "% del total de personas bajo pobreza"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+<div style="text-align: justify"> 
+El primer gráfico muestra la **aportación relativa de cada temática** al total de personas en situación de pobreza. En este agregado nacional, se observa que las dimensiones de **Edad** y **Sexo** concentran cada una el **29.5%** del total de personas pobres, seguidas por **Etnia** con el **27.9%**. En contraste, la dimensión **Educación** representa solo el **13.1%** del total.
+
+Esta lectura podría sugerir que la educación tiene un rol secundario en la explicación de la pobreza. Sin embargo, esta interpretación cambia radicalmente cuando se analiza la **tasa de pobreza dentro de cada grupo social**, como se muestra en el segundo gráfico. 
+</div>
+
+<br><br>
+
+**Identificación de la educación como principal factor explicativo**
+
+```{r}
+tematicas <- c("Etnia", "Edad", "Sexo", "Educación")
+
+datos_comparativa <- df %>%
+  filter(Tematica %in% tematicas) %>%
+  filter(Fecha == max(Fecha)) %>%
+  group_by(Tematica, Grupo_social) %>%
+  summarise(
+    Total = sum(Total_poblacion, na.rm = TRUE),
+    Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Pct = Pobre / Total,
+    Grupo_social = paste0(Grupo_social, " (", Tematica, ")")
+  ) %>%
+  arrange(desc(Pct))
+
+ggplot(datos_comparativa, aes(x = reorder(Grupo_social, Pct), y = Pct, fill = Tematica)) +
+  geom_col(width = 0.7) +
+  geom_text(aes(label = scales::percent(Pct, accuracy = 0.1)), hjust = -0.1, size = 3.2, color = "black") +
+  scale_y_continuous(labels = scales::percent_format(), expand = expansion(mult = c(0, 0.1))) +
+  scale_fill_manual(values = colores_dashboard) +
+  labs(
+    title = "Comparativa de pobreza por dimensión social",
+    subtitle = paste0("Tasa de pobreza (% dentro de cada grupo) – Año ", format(max(df$Fecha), "%Y")),
+    x = "Grupo social", y = "% pobreza", fill = "Temática"
+  ) +
+  coord_flip() +
+  theme_minimal(base_size = 12) +
+  theme(
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10),
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold"),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11)
+  )
+```
+<div style="text-align: justify"> 
+La segunda visualización revela que los grupos educativos presentan las **tasas más altas de pobreza**. En particular, las personas con **educación básica** alcanzan una tasa del **25%**, superando a todos los demás grupos analizados, incluidos los **afroamericanos** (20.8%), los **hispanos o latinos** (17.7%) y los **menores de edad** (16.3%).
+
+Además, se observa una **brecha educativa muy marcada**: mientras que los grupos con menor nivel educativo concentran las mayores tasas de pobreza, aquellos con **título universitario** presentan una tasa significativamente inferior (**4.7%**), lo que evidencia el efecto protector de la educación.
+
+Este contraste interno dentro de la dimensión educativa —entre pobreza extrema y movilidad social— permite identificar la **educación como el principal factor explicativo de la pobreza estructural**. No por volumen absoluto, sino por intensidad y capacidad de transformación.
+
+En consecuencia, se refuerza la hipótesis de que **las políticas públicas orientadas a mejorar el acceso, permanencia y calidad educativa** pueden tener un impacto transversal en la reducción de la pobreza, especialmente en los grupos más vulnerables. 
+</div>
+
+<br><br>
+
+#### 📈 **Evolución temporal por grupo social (Educación)**
+
+**Lectura de tendencias persistentes**
+
+<div style="text-align: justify"> 
+El gráfico muestra la evolución de la **tasa de pobreza** dentro de cada grupo educativo entre **2016 y 2022**, permitiendo observar tendencias persistentes y contrastes estructurales.
+</div>
+
+```{r }
+tematica_seleccionada <- "Educación"
+
+datos_nacional <- df %>%
+  dplyr::filter(Tematica == tematica_seleccionada) %>%
+  dplyr::group_by(Fecha, Grupo_social) %>%
+  dplyr::summarise(
+    Total = sum(Total_poblacion, na.rm = TRUE),
+    Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(Pct = Pobre / Total)
+
+extremos_nacional <- datos_nacional %>%
+  dplyr::group_by(Grupo_social) %>%
+  dplyr::summarise(
+    Fecha_ini = first(Fecha),
+    Pct_ini = first(Pct),
+    Fecha_fin = last(Fecha),
+    Pct_fin = last(Pct),
+    .groups = "drop"
+  )
+
+ggplot(datos_nacional, aes(x = Fecha, y = Pct, color = Grupo_social)) +
+  geom_line(linewidth = 1.2) +
+  geom_text(data = extremos_nacional,
+            aes(x = Fecha_ini, y = Pct_ini, label = scales::percent(Pct_ini, accuracy = 0.1)),
+            color = "black", hjust = -0.1, vjust = 1.2, size = 3, inherit.aes = FALSE) +
+  geom_text(data = extremos_nacional,
+            aes(x = Fecha_fin, y = Pct_fin, label = scales::percent(Pct_fin, accuracy = 0.1)),
+            color = "black", hjust = 1.1, vjust = -0.6, size = 3, inherit.aes = FALSE) +
+  scale_color_manual(values = colores_dashboard) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    title = "Evolución de pobreza por nivel educativo – Agregado Nacional",
+    subtitle = "Tasa de pobreza (% dentro de cada grupo educativo) a lo largo del tiempo\nIncluye valores iniciales y finales por grupo",
+    x = NULL, y = "% pobreza", color = "Nivel Educativo"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+
+```
+<div style="text-align: justify"> 
+El grupo con **educación básica** presenta las tasas más elevadas de pobreza a lo largo de todo el periodo, con una ligera reducción del **26.2% en 2016** al **25.0% en 2023**, lo que indica una persistencia estructural de la exclusión social en los niveles educativos más bajos. Esta estabilidad en niveles altos sugiere que las personas con baja instrucción enfrentan barreras sistemáticas para salir de la pobreza, incluso en contextos de mejora económica.
+
+Por otro lado, el grupo con **educación secundaria** muestra una tasa intermedia, situada en **14.9% en 2023**, lo que refleja una mejora relativa respecto a la educación básica, aunque sin alcanzar los niveles de protección observados en la educación superior.
+
+El contraste más marcado se observa en el grupo con **título universitario**, cuya tasa de pobreza se mantiene en niveles bajos, pasando de **4.5% en 2016 a 4.7% en 2022**. Esta estabilidad evidencia el **efecto protector de la educación superior**, tanto en términos de acceso al empleo formal como de resiliencia frente a crisis económicas.
+
+En conjunto, la evolución temporal confirma que la **educación actúa como un factor estructural de movilidad social**, y que las brechas entre niveles educativos se mantienen estables en el tiempo. Esto refuerza la necesidad de **políticas públicas orientadas a la universalización de la educación secundaria y el acceso equitativo a la educación superior**, como estrategia central para la reducción sostenida de la pobreza. 
+</div>
+
+<br><br>
+
+#### 🎓 **Distribución actual dentro de la población pobre (Nivel educativo)**
+
+**Enfoque en volumen absoluto por nivel educativo – Agregado Nacional**
+
+<div style="text-align: justify"> 
+El gráfico muestra la **composición total de la población bajo pobreza en 2023**, desagregada por **nivel educativo alcanzado**, a nivel nacional. A diferencia del análisis de tasas de pobreza dentro de cada grupo, esta visualización se enfoca en el **volumen absoluto** de personas pobres, permitiendo identificar qué niveles educativos concentran mayor cantidad de población vulnerable.
+</div>
+
+```{r}
+tematica_seleccionada <- "Educación"
+
+ultimo <- df %>%
+  dplyr::filter(Tematica == tematica_seleccionada) %>%
+  dplyr::summarise(Fecha = max(Fecha, na.rm = TRUE)) %>%
+  dplyr::pull(Fecha)
+
+if (length(ultimo) != 1 || !is.finite(ultimo)) {
+  stop("No hay fecha válida para esta temática.")
+}
+
+datos <- df %>%
+  dplyr::filter(Tematica == tematica_seleccionada,
+                Fecha == ultimo) %>%
+  dplyr::group_by(Grupo_social) %>%
+  dplyr::summarise(
+    Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE),
+    Total = sum(Total_poblacion, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(Pobre = dplyr::if_else(is.na(Pobre), 0, Pobre)) %>%
+  dplyr::filter(Pobre > 0)
+
+if (nrow(datos) == 0) {
+  stop(paste0("Sin datos de pobreza para ", format(ultimo, "%Y-%m-%d"), "."))
+}
+
+suma_pobre <- sum(datos$Pobre, na.rm = TRUE)
+if (suma_pobre == 0) {
+  stop("No hay personas bajo pobreza en la fecha seleccionada.")
+}
+
+datos <- datos %>%
+  dplyr::mutate(
+    Pct = Pobre / suma_pobre,
+    etiqueta = paste0(scales::percent(Pct, accuracy = 0.1), "\n(n=", scales::comma(Pobre), ")")
+  ) %>%
+  dplyr::arrange(desc(Pct))
+
+paleta <- colores_dashboard[names(colores_dashboard) %in% datos$Grupo_social]
+
+ggplot(datos, aes(x = 2, y = Pct, fill = Grupo_social)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  xlim(0.5, 2.5) +
+  geom_text(aes(label = etiqueta),
+            position = position_stack(vjust = 0.5),
+            size = 3, lineheight = 0.9) +
+  scale_fill_manual(values = paleta) +
+  labs(
+    title = paste("Distribución de personas bajo pobreza –", lubridate::year(ultimo)),
+    subtitle = "Participación por grupo dentro del total de personas pobres (volumen abs.)",
+    x = NULL, y = NULL, fill = "Nivel Educativo",
+    caption = "Nota: este gráfico muestra la composición total; la línea anterior refleja tasas de pobreza dentro de cada grupo."
+  ) +
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    plot.subtitle = element_text(size = 10, face = "italic"),
+    plot.caption = element_text(size = 8, color = "grey40")
+  )
+```
+<div style="text-align: justify"> 
+Los resultados son contundentes: el grupo con **educación secundaria** representa la mayor proporción dentro de la población pobre, con un **47.4%** del total (**n = 8,872,757 personas**). Le sigue el grupo con **educación básica**, que abarca un **31.3%** (**n = 5,817,345**). En contraste, las personas con **título universitario** constituyen solo el **21.3%** (**n = 3,965,837**), lo que confirma una correlación inversa entre nivel educativo y volumen de pobreza.
+
+Este patrón refuerza la evidencia de que el **nivel educativo es un factor estructural clave** en la distribución de la pobreza. La alta concentración en los niveles medio y básico sugiere que las políticas públicas deben enfocarse en **mejorar la retención escolar, fortalecer la educación secundaria, y ampliar el acceso a estudios superiores**, no solo como vía de movilidad individual, sino como estrategia para reducir la pobreza agregada. 
+</div>
+
+<div style="text-align: justify"><em> 
+Nota metodológica: Es importante distinguir entre los dos enfoques utilizados en el análisis por nivel educativo. El gráfico de evolución temporal muestra la tasa de pobreza, es decir, el porcentaje de personas pobres dentro de cada grupo educativo. Este indicador permite evaluar el riesgo relativo de pobreza según el nivel de instrucción. En cambio, el gráfico de distribución actual se basa en el volumen absoluto de personas pobres, mostrando cuántas personas pobres pertenecen a cada grupo educativo en términos agregados. Por ejemplo, aunque las personas con educación básica presentan la tasa más alta de pobreza, no son el grupo más numeroso dentro de la población total. Por ello, en el gráfico de distribución aparecen en segundo lugar. Ambos enfoques son complementarios: mientras la tasa permite identificar grupos en riesgo, el volumen absoluto orienta la priorización operativa en términos de cobertura y focalización de políticas públicas. 
+</em></div>
+
+<br><br>
+
+#### 🧱 **Distribución por situación laboral**
+
+**Enfoque en volumen absoluto – Agregado Nacional**
+
+<div style="text-align: justify"> 
+El gráfico presenta la **composición actual de la población pobre en el país**, desagregada por **situación laboral**, para el año más reciente disponible (2023). A diferencia de los análisis por tasa, esta visualización se enfoca en el **volumen absoluto** de personas pobres, permitiendo identificar qué condiciones laborales concentran mayor vulnerabilidad.
+</div>
+
+```{r}
+tematica_seleccionada <- "Empleo"
+
+ultimo <- df %>%
+  dplyr::filter(Tematica == tematica_seleccionada) %>%
+  dplyr::summarise(Fecha = max(Fecha, na.rm = TRUE)) %>%
+  dplyr::pull(Fecha)
+
+if (length(ultimo) != 1 || !is.finite(ultimo)) {
+  stop("No hay fecha válida para esta temática.")
+}
+
+datos <- df %>%
+  dplyr::filter(Tematica == tematica_seleccionada,
+                Fecha == ultimo) %>%
+  dplyr::group_by(Grupo_social) %>%
+  dplyr::summarise(Pobre = sum(Bajo_umbral_pobreza, na.rm = TRUE), .groups = "drop") %>%
+  dplyr::mutate(Pct = Pobre / sum(Pobre)) %>%
+  dplyr::arrange(desc(Pct))
+
+if (nrow(datos) == 0) {
+  stop("Sin datos de 'Empleo' para la fecha actual.")
+}
+
+paleta <- colores_dashboard[names(colores_dashboard) %in% datos$Grupo_social]
+
+ggplot(datos, aes(x = reorder(Grupo_social, -Pct), y = Pct, fill = Grupo_social)) +
+  geom_col() +
+  geom_text(aes(label = paste0(scales::percent(Pct, accuracy = 0.1), "\nN = ", scales::comma(Pobre))),
+            vjust = -0.6, size = 3.3) +
+  scale_fill_manual(values = paleta) +
+  scale_y_continuous(labels = scales::percent_format(), expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title = paste("Distribución dentro de la población pobre –", lubridate::year(ultimo)),
+    subtitle = "Por situación laboral (volumen absoluto)",
+    x = "Grupo laboral",
+    y = "% dentro del total en pobreza"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+<div style="text-align: justify"> 
+Los resultados son reveladores: el **81.2%** de las personas pobres en el país están **empleadas** (**n = 9,523,969**), mientras que el **18.8%** se encuentran **desempleadas** (**n = 2,205,895**). Esta distribución pone de manifiesto que el empleo, por sí solo, **no garantiza la salida de la pobreza**.
+
+La elevada proporción de personas pobres con empleo sugiere la presencia de **trabajo precario, informal o mal remunerado**, lo que limita el acceso a condiciones de vida dignas. Por otro lado, aunque el desempleo representa una fracción menor, sigue siendo un **factor crítico de exclusión económica**, especialmente en contextos de baja cobertura de protección social.
+
+En conjunto, estos datos refuerzan la necesidad de políticas públicas que no solo promuevan la **creación de empleo**, sino que garanticen su **calidad, estabilidad y formalización**, como pilares fundamentales para la reducción sostenible de la pobreza. 
+</div>
+
+<div style="text-align: justify"><em> 
+Nota metodológica: La diferencia entre tasa de pobreza y volumen absoluto es fundamental para interpretar los datos. La tasa permite identificar grupos con mayor riesgo, mientras que el volumen revela qué grupos componen la pobreza total. Un grupo puede tener una tasa alta pero representar pocos pobres si su tamaño poblacional es pequeño. Por eso, ambos enfoques deben analizarse en conjunto para diseñar políticas eficaces. 
+</em></div>
+
+<br><br>
+
+#### 🔚 **Conclusiones**
+
+**Reafirmación del papel de la educación en la reproducción de la pobreza**
+
+<div style="text-align: justify"> 
+El análisis transversal y temporal confirma que la **educación es el principal factor estructural** en la reproducción de la pobreza.
+
+Las personas con **educación básica** o **sin secundaria** presentan las **tasas más elevadas de pobreza**, mientras que quienes poseen **título universitario** muestran niveles significativamente más bajos.
+
+Esta relación se mantiene **estable en el tiempo** y es consistente en distintos territorios, lo que refuerza la hipótesis de que la educación actúa como **mecanismo protector** frente a la exclusión social.
+
+La **brecha educativa** no solo refleja desigualdad en el acceso al conocimiento, sino que se traduce en **diferencias profundas en oportunidades laborales, ingresos, salud y resiliencia económica**.
+
+Por tanto, invertir en educación —especialmente en los niveles medio y superior— no solo mejora indicadores individuales, sino que **transforma estructuras sociales** y reduce desigualdades persistentes.
+
+<br><br>
+
+#### 🧩 **Propuesta de enfoque multivariado para futuras políticas públicas**
+
+Si bien la educación emerge como el eje explicativo más potente, el análisis revela que **otros factores como la situación laboral, edad, etnia y sexo** también inciden en la distribución de la pobreza.
+
+La alta proporción de personas pobres empleadas (81.2%) evidencia que el **trabajo precario o informal** limita la capacidad del empleo como vía de salida de la pobreza.
+
+La persistencia de pobreza entre **menores de edad** y ciertos **grupos étnicos** sugiere que la vulnerabilidad es **multidimensional**, y requiere un enfoque **interseccional**.
+
+Se propone un **modelo multivariado** de intervención, que combine:
+
+1- **Universalización de la educación secundaria**
+
+2- **Acceso equitativo a educación superior**
+
+3- **Formalización y mejora de la calidad del empleo**
+
+4- **Protección social focalizada en grupos vulnerables**
+
+5- **Políticas territoriales adaptadas a dinámicas locales**
+
+Este enfoque permitiría **amplificar el efecto protector de la educación**, al integrarla con otras dimensiones clave del bienestar social.
+</div>
+
+
+
