@@ -796,6 +796,7 @@ ggplot(datos, aes(x = reorder(Grupo_social, -Pct), y = Pct, fill = Grupo_social)
   theme(legend.position = "none")
 
 ```
+
 <div style="text-align: justify"> 
 **Indicadores clave de pobreza – evolución temporal**
 
