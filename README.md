@@ -118,10 +118,14 @@ Diseñado con `flexdashboard`, `ggplot2`, `plotly` y `dplyr`.
 
 ### 📄 Informe técnico reproducible
 
-Generado con `knitr` y `RMarkdown`, incluye:
-- Tabla resumen por estado y grupo social.
-- Gráfico principal de evolución temporal.
-- Texto explicativo con código embebido (`r` inline y chunks).
+Generado con `knitr` y `RMarkdown`, este informe presenta un análisis detallado y reproducible sobre la evolución de la pobreza en EE.UU. entre 2016 y 2023, con foco en subgrupos sociales y estados. Incluye:
+
+- 📋 **Tabla resumen** por estado y grupo social, con indicadores clave como población total, bajo umbral de pobreza y porcentaje de pobreza.
+- 📈 **Gráficos de evolución temporal** por grupo social, con estimaciones robustas para el año 2020 en ausencia de datos oficiales.
+- 🧠 **Texto explicativo** con código embebido (`r` inline y chunks), que documenta cada paso del procesamiento, modelado y visualización.
+- 📊 **Visualizaciones exploratorias** como histogramas, boxplots, gráficos de dispersión y circulares, que permiten detectar patrones, outliers y relaciones estructurales.
+- 🧮 **Indicadores clave (KPIs)** sobre pobreza actual, variación anual y evolución en cinco años, útiles para el monitoreo y evaluación de políticas públicas.
+- 🎨 **Codificación visual personalizada** mediante un vector de colores temático, que mejora la legibilidad y coherencia del dashboard interactivo.
 
 ---
 
